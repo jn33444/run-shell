@@ -14,9 +14,14 @@ app.get("/health", (_req, res) => res.sendStatus(200));
 
 app.post("/exec", (req, res) => {
   const { cmd } = req.body || {};
-  if (!cmd) return res.status(400).json({ error: "cmd required" });
 
+  // ✅ Log every incoming command
   console.log("🔁 Received command:", cmd);
+
+  if (!cmd) {
+    console.log("❌ No command received.");
+    return res.status(400).json({ error: "cmd required" });
+  }
 
   exec(cmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
     if (err) {
@@ -32,5 +37,5 @@ app.post("/exec", (req, res) => {
 app.get("/", (_req, res) => res.send("MYPCAI API running"));
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
