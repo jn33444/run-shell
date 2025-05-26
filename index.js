@@ -1,27 +1,36 @@
-import express from "express";
-import bodyParser from "body-parser";
-import fetch from "node-fetch";
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const { exec } = require("child_process");
 
 const app = express();
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 8080;
 
-app.post("/", async (req, res) => {
-  const { cmd } = req.body.arguments;
-  console.log("Received cmd from OpenAI:", cmd);
+app.use(cors());
+app.use(morgan("combined"));
+app.use(express.json());
 
-  const response = await fetch("https://mvpcai-cloud.onrender.com/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cmd })
+app.get("/health", (_req, res) => res.sendStatus(200));
+
+app.post("/exec", (req, res) => {
+  const { cmd } = req.body || {};
+  if (!cmd) return res.status(400).json({ error: "cmd required" });
+
+  console.log("🔁 Received command:", cmd);
+
+  exec(cmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
+    if (err) {
+      console.log("❌ Shell error:", stderr || err.message);
+      return res.status(500).json({ error: stderr || err.message });
+    }
+
+    console.log("✅ Shell output:", stdout);
+    res.json({ output: stdout });
   });
-
-  const data = await response.json();
-  console.log("Shell result:", data);
-  res.json(data);
 });
 
-const PORT = parseInt(process.env.PORT || "10000", 10);
-console.log("PORT from env:", process.env.PORT);
-app.listen(PORT, () => {
-  console.log(`run_shell listening on port ${PORT}`);
+app.get("/", (_req, res) => res.send("MYPCAI API running"));
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server listening on port ${PORT}`);
 });
