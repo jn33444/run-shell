@@ -21,6 +21,7 @@ app.post("/", async (req, res) => {
 });
 
 const PORT = parseInt(process.env.PORT || "10000", 10);
+console.log("PORT from env:", process.env.PORT);
 app.listen(PORT, () => {
   console.log(`run_shell listening on port ${PORT}`);
 });
