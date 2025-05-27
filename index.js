@@ -1,20 +1,28 @@
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import { exec } from "child_process";
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+app.use(morgan("dev"));
+
+const PORT = process.env.PORT || 10000;
+
+app.get("/health", (_req, res) => res.send("OK"));
+
 app.post("/exec", (req, res) => {
   const { cmd } = req.body || {};
-  console.log("🔁 Received command:", cmd);
+  if (!cmd) return res.status(400).json({ error: "missing cmd" });
 
-  if (!cmd) {
-    console.log("❌ No command received.");
-    return res.status(400).json({ error: "cmd required" });
-  }
-
-  exec(cmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
-    if (err) {
-      console.log("❌ Shell error (raw):", err);
-      console.log("❌ Shell stderr:", stderr);
-      return res.status(500).json({ error: stderr || err.message });
-    }
-
-    console.log("✅ Shell output:", stdout);
-    res.json({ output: stdout });
+  exec(cmd, { shell: "/bin/bash" }, (err, stdout, stderr) => {
+    if (err) return res.status(500).type("text/plain").send(stderr);
+    res.type("text/plain").send(stdout);
   });
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Using port: ${PORT}`);
+  console.log(`🚀 Tool relay server listening on port ${PORT}`);
 });
